@@ -294,6 +294,20 @@ prepare_chroot() {
 	echo "$RESOLVCONF_MARK" >> "$dest"/etc/resolv.conf
 }
 
+prepare_gpu_env() {
+	local dest="$1"
+	install -D -m 644 /rootfs/usr/local/etc/nvidia-container-runtime/config.toml "$dest"/etc/nvidia-container-runtime/config.toml
+	cp -a /rootfs/usr/local/glibc "$dest"/usr/local/
+	mkdir -p "$dest"/etc/ld.so.conf.d
+	cat > "$dest"/etc/ld.so.conf.d/glibc.conf <<-EOF
+		usr/local/glibc/usr/lib
+		/usr/local/glibc/lib
+		/usr/local/glibc/lib64
+	EOF
+	ldconfig -r "$dest" || die 'Failed to run ldconfig in chroot'
+	install -D -m /rootfs/usr/local/bin/* "$dest"/usr/local/bin/
+}
+
 # Adds specified services to the runlevel. Current working directory must be
 # root of the image.
 rc_add() {
@@ -430,7 +444,7 @@ done
 : ${ALPINE_BRANCH:="latest-stable"}
 : ${ALPINE_MIRROR:="http://dl-cdn.alpinelinux.org/alpine"}
 : ${ARCH:=}
-: ${CLEANUP:="yes"}
+: ${CLEANUP:="no"}
 : ${FS_SKEL_CHOWN:=}
 : ${FS_SKEL_DIR:=}
 : ${IMAGE_FORMAT:=}
@@ -605,6 +619,7 @@ fsprogs_pkgs=
 [ "$fsprogs_pkgs" ] && _apk add --root . $fsprogs_pkgs
 
 prepare_chroot .
+prepare_gpu_env .
 
 #-----------------------------------------------------------------------
 einfo "Installing kernel linux-$KERNEL_FLAVOR"
@@ -744,3 +759,12 @@ einfo 'Completed'
 
 cd - >/dev/null
 ls -lh "$IMAGE_FILE"
+
+
+
+              --image-format raw \
+              --image-size 1500M \
+              --branch v3.18 \
+              --serial-console \
+              --script-chroot \
+              disk.img
