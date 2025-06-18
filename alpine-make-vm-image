@@ -299,11 +299,10 @@ prepare_gpu_env() {
 	local dest="$1"
 	install -D -m 644 /workdir/rootfs/usr/local/etc/nvidia-container-runtime/config.toml "$dest"/etc/nvidia-container-runtime/config.toml
 	cp -a /workdir/rootfs/usr/local/glibc "$dest"/usr/local/
+	rm -rf "$dest"/usr/local/glibc/lib64
 	mkdir -p "$dest"/etc/ld.so.conf.d
 	cat > "$dest"/etc/ld.so.conf.d/glibc.conf <<-EOF
-		usr/local/glibc/usr/lib
-		/usr/local/glibc/lib
-		/usr/local/glibc/lib64
+		/usr/local/glibc/usr/lib
 	EOF
 	apk add --root "$dest" libc-utils
 	cp -a /workdir/rootfs/usr/local/bin/ "$dest"/usr/local/
