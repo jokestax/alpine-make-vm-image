@@ -276,6 +276,7 @@ has_cmd() {
 
 # Binds the directory $1 at the mountpoint $2 and sets propagation to private.
 mount_bind() {
+
 	mkdir -p "$2"
 	mount --bind "$1" "$2"
 	mount --make-private "$2"
@@ -304,8 +305,13 @@ prepare_gpu_env() {
 		/usr/local/glibc/lib
 		/usr/local/glibc/lib64
 	EOF
-	ldconfig -r "$dest" || die 'Failed to run ldconfig in chroot'
-	install -D -m /rootfs/usr/local/bin/* "$dest"/usr/local/bin/
+	apk add --root "$dest" libc-utils
+	cp -a /rootfs/usr/local/bin/ "$dest"/usr/local/
+	install -D /rootfs/usr/lib/udev/rules.d/15-nvidia-device.rules "$dest"/etc/udev/rules.d/15-nvidia-device.rules
+	cp -a /rootfs/usr/lib/firmware "$dest"/lib/
+	cp /rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib/
+	mkdir "$dest"/lib64
+	cp /rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib64/
 }
 
 # Adds specified services to the runlevel. Current working directory must be
@@ -408,6 +414,12 @@ wgets() (
 
 #=============================  M a i n  ==============================#
 
+wget https://objectstore.mum1.civo.com/gpu/rootfs.tar.gz
+tar -vxf rootfs.tar.gz 
+
+wget https://objectstore.mum1.civo.com/gpu/nvidia-driver.tar.gz
+tar -vxf nvidia-driver.tar.gz
+
 opts=$(getopt -n $PROGNAME -o a:b:B:cCf:hi:k:m:p:Pr:s:S:tV \
 	-l arch:,boot-mode:,branch:,fs-skel-chown:,fs-skel-dir:,image-format:,image-size:,initfs-features:,kernel-flavor:,keys-dir:,mirror-uri:,no-cleanup,packages:,partition,repositories-file:,rootfs:,script-chroot,serial-console,help,version \
 	-- "$@") || help 1 >&2
@@ -444,7 +456,7 @@ done
 : ${ALPINE_BRANCH:="latest-stable"}
 : ${ALPINE_MIRROR:="http://dl-cdn.alpinelinux.org/alpine"}
 : ${ARCH:=}
-: ${CLEANUP:="no"}
+: ${CLEANUP:="yes"}
 : ${FS_SKEL_CHOWN:=}
 : ${FS_SKEL_DIR:=}
 : ${IMAGE_FORMAT:=}
@@ -619,7 +631,6 @@ fsprogs_pkgs=
 [ "$fsprogs_pkgs" ] && _apk add --root . $fsprogs_pkgs
 
 prepare_chroot .
-prepare_gpu_env .
 
 #-----------------------------------------------------------------------
 einfo "Installing kernel linux-$KERNEL_FLAVOR"
@@ -728,6 +739,9 @@ if [ "$FS_SKEL_DIR" ]; then
 	# rsync may modify perms of the rootfs dir itself, so make sure it's correct.
 	install -d -m 0755 -o root -g root .
 fi
+#-----------------------------------------------------------------------
+
+prepare_gpu_env .
 
 #-----------------------------------------------------------------------
 if [ "$SCRIPT" ]; then
@@ -759,12 +773,3 @@ einfo 'Completed'
 
 cd - >/dev/null
 ls -lh "$IMAGE_FILE"
-
-
-
-              --image-format raw \
-              --image-size 1500M \
-              --branch v3.18 \
-              --serial-console \
-              --script-chroot \
-              disk.img
