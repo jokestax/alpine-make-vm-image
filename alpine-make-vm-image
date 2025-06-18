@@ -297,8 +297,8 @@ prepare_chroot() {
 
 prepare_gpu_env() {
 	local dest="$1"
-	install -D -m 644 ./rootfs/usr/local/etc/nvidia-container-runtime/config.toml "$dest"/etc/nvidia-container-runtime/config.toml
-	cp -a ./rootfs/usr/local/glibc "$dest"/usr/local/
+	install -D -m 644 /workdir/rootfs/usr/local/etc/nvidia-container-runtime/config.toml "$dest"/etc/nvidia-container-runtime/config.toml
+	cp -a /workdir/rootfs/usr/local/glibc "$dest"/usr/local/
 	mkdir -p "$dest"/etc/ld.so.conf.d
 	cat > "$dest"/etc/ld.so.conf.d/glibc.conf <<-EOF
 		usr/local/glibc/usr/lib
@@ -306,12 +306,12 @@ prepare_gpu_env() {
 		/usr/local/glibc/lib64
 	EOF
 	apk add --root "$dest" libc-utils
-	cp -a ./rootfs/usr/local/bin/ "$dest"/usr/local/
-	install -D ./rootfs/usr/lib/udev/rules.d/15-nvidia-device.rules "$dest"/etc/udev/rules.d/15-nvidia-device.rules
-	cp -a ./rootfs/usr/lib/firmware "$dest"/lib/
-	cp ./rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib/
+	cp -a /workdir/rootfs/usr/local/bin/ "$dest"/usr/local/
+	install -D /workdir/rootfs/usr/lib/udev/rules.d/15-nvidia-device.rules "$dest"/etc/udev/rules.d/15-nvidia-device.rules
+	cp -a /workdir/rootfs/usr/lib/firmware "$dest"/lib/
+	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib/
 	mkdir "$dest"/lib64
-	cp ./rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib64/
+	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib64/
 }
 
 # Adds specified services to the runlevel. Current working directory must be
