@@ -414,7 +414,7 @@ wgets() (
 
 #=============================  M a i n  ==============================#
 
-wget https://objectstore.mum1.civo.com/gpu/rootfs/.tar.gz
+wget https://objectstore.mum1.civo.com/gpu/rootfs.tar.gz
 tar -vxf rootfs.tar.gz 
 
 wget https://objectstore.mum1.civo.com/gpu/nvidia-driver.tar.gz
