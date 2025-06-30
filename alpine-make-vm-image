@@ -297,7 +297,7 @@ prepare_chroot() {
 
 prepare_gpu_env() {
 	local dest="$1"
-	install -D -m 644 /workdir/rootfs/usr/local/etc/nvidia-container-runtime/config.toml "$dest"/etc/nvidia-container-runtime/config.toml
+	install -D -m 644 /workdir/rootfs/usr/local/etc/nvidia-container-runtime/config.toml "$dest"/usr/local/etc/nvidia-container-runtime/config.toml
 	cp -a /workdir/rootfs/usr/local/glibc "$dest"/usr/local/
 	rm -rf "$dest"/usr/local/glibc/lib64
 	mkdir -p "$dest"/etc/ld.so.conf.d
@@ -312,6 +312,36 @@ prepare_gpu_env() {
 	mkdir "$dest"/lib64
 	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib64/
 	cp -r /workdir/rootfs/usr/local/glibc/lib64/* "$dest"/lib64/
+
+	# Download and extract Fabric Manager
+	local fm_url="https://developer.download.nvidia.com/compute/nvidia-driver/redist/fabricmanager/linux-x86_64/fabricmanager-linux-x86_64-570.148.08-archive.tar.xz"
+	local archive="fabricmanager-linux-x86_64-570.148.08-archive.tar.xz"
+	local fb_dir="fabricmanager-linux-x86_64-570.148.08-archive"
+
+	wget -q "$fm_url"
+	tar -xf "$archive"
+	
+	install -D "$fb_dir/lib/libnvfm.so.1" "$dest/usr/local/lib/libnvfm.so.1"
+	ln -sf libnvfm.so.1 "$dest/usr/local/lib/libnvfm.so"
+
+	install -D "$fb_dir/bin/nv-fabricmanager" "$dest/usr/local/bin/nv-fabricmanager"
+	install -D "$fb_dir/bin/nvswitch-audit" "$dest/usr/local/bin/nvswitch-audit"
+
+	mkdir -p "$dest/usr/local/share/nvidia/nvswitch/"
+	cp "$fb_dir/share/nvidia/nvswitch/"* "$dest/usr/local/share/nvidia/nvswitch/"
+	cp "$fb_dir/etc/fabricmanager.cfg" "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg"
+
+	{
+		echo "FABRIC_NODE_CONFIG_FILE=/usr/local/share/nvidia/nvswitch/fabricmanager.cfg"
+		sed 's|DAEMONIZE=.*|DAEMONIZE=0|' \
+		| sed 's|STATE_FILE_NAME=.*|STATE_FILE_NAME=/var/run/nvidia-fabricmanager/fabricmanager.state|' \
+		| sed 's|TOPOLOGY_FILE_PATH=.*|TOPOLOGY_FILE_PATH=/usr/local/share/nvidia/nvswitch|' \
+		| sed 's|DATABASE_PATH=.*|DATABASE_PATH=/usr/local/share/nvidia/nvswitch|'
+	} < "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg" \
+	  > "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg.tmp"
+
+	mv "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg.tmp" \
+	   "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg"
 }
 
 # Adds specified services to the runlevel. Current working directory must be
