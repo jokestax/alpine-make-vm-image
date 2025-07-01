@@ -300,6 +300,7 @@ prepare_gpu_env() {
 	install -D -m 644 /workdir/rootfs/usr/local/etc/nvidia-container-runtime/config.toml "$dest"/usr/local/etc/nvidia-container-runtime/config.toml
 	cp -a /workdir/rootfs/usr/local/glibc "$dest"/usr/local/
 	rm -rf "$dest"/usr/local/glibc/lib64
+	rm -rf "$dest"/usr/local/glibc/usr/lib/lib64
 	mkdir -p "$dest"/etc/ld.so.conf.d
 	cat > "$dest"/etc/ld.so.conf.d/glibc.conf <<-EOF
 		/usr/local/glibc/usr/lib
