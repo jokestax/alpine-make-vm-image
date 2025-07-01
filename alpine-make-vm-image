@@ -466,9 +466,6 @@ wgets() (
 wget https://objectstore.mum1.civo.com/gpu/rootfs.tar.gz
 tar -vxf rootfs.tar.gz 
 
-wget https://objectstore.mum1.civo.com/gpu/nvidia-driver.tar.gz
-tar -vxf nvidia-driver.tar.gz
-
 opts=$(getopt -n $PROGNAME -o a:b:B:cCf:hi:k:m:p:Pr:s:S:tV \
 	-l arch:,boot-mode:,branch:,fs-skel-chown:,fs-skel-dir:,image-format:,image-size:,initfs-features:,kernel-flavor:,keys-dir:,mirror-uri:,no-cleanup,packages:,partition,repositories-file:,rootfs:,script-chroot,serial-console,help,version \
 	-- "$@") || help 1 >&2
