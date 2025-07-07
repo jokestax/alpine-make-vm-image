@@ -312,7 +312,8 @@ prepare_gpu_env() {
 	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib/
 	mkdir "$dest"/lib64
 	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib64/
-	cp -r /workdir/rootfs/usr/local/glibc/lib64/* "$dest"/lib64/
+	mkdir "$dest"/usr/local/lib64
+	cp -r /workdir/rootfs/usr/local/glibc/lib64/* "$dest"/usr/local/lib64/
 
 	cat > "$dest"/etc/modules <<-EOF
 		firmware_class
