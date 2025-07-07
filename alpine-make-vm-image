@@ -314,15 +314,14 @@ prepare_gpu_env() {
 	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib64/
 	cp -r /workdir/rootfs/usr/local/glibc/lib64/* "$dest"/lib64/
 
-	mkdir -p "$dest"/etc/modules-load.d
-	cat > "$dest"/etc/modules-load.d/nvidia-core-deps.conf <<-EOF
-		firmware_class
-		ecdh_generic
-		ecc
-		nvidia
-		nvidia_modeset
-		nvidia_uvm
-		nvidia_drm
+	cat >> "$dest"/etc/modules <<EOF
+	firmware_class
+	ecdh_generic
+	ecc
+	nvidia
+	nvidia_modeset
+	nvidia_uvm
+	nvidia_drm
 	EOF
 
 	mkdir -p "$dest/etc/modprobe.d"
