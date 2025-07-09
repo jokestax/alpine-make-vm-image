@@ -317,13 +317,14 @@ prepare_gpu_env() {
 	done
 	mkdir "$dest"/usr/local/special
     cp -r /workdir/rootfs/usr/local/lib/lib* "$dest"/usr/local/special
-	cat << 'EOF' > "$dest/usr/local/bin/nvidia-container-cli"
-	#!/bin/sh
+	cat <<- 'EOF' > "$dest/usr/local/bin/nvidia-container-cli"
+		#!/bin/sh
 	
-	export LD_LIBRARY_PATH=/usr/local/special/
-	exec /usr/local/bin/nvidia-container-cli-original "$@"
+		export LD_LIBRARY_PATH=/usr/local/special/
+		exec /usr/local/bin/nvidia-container-cli-original "\$@"
 	EOF
-	chmod +x /usr/local/bin/nvidia-container-cli
+	
+	chmod +x "$dest/usr/local/bin/nvidia-container-cli"
 	mv "$dest"/usr/local/bin/nvidia-container-cli "$dest"/usr/local/bin/nvidia-container-cli-original
 	cat > "$dest"/etc/modules <<-EOF
 		firmware_class
