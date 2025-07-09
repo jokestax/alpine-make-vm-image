@@ -334,14 +334,6 @@ prepare_gpu_env() {
 		nvidia-drm
 	EOF
 
-	mkdir -p "$dest/etc/modprobe.d"
-	cat > "$dest/etc/modprobe.d/nvidia-softdep.conf" <<-EOF
-		softdep nvidia pre: firmware_class ecdh_generic ecc
-		softdep nvidia-modeset pre: firmware_class ecdh_generic ecc
-		softdep nvidia-uvm pre: firmware_class ecdh_generic ecc
-		softdep nvidia-drm pre: firmware_class ecdh_generic ecc
-	EOF
-
 	# Download and extract Fabric Manager
 	local fm_url="https://developer.download.nvidia.com/compute/nvidia-driver/redist/fabricmanager/linux-x86_64/fabricmanager-linux-x86_64-570.148.08-archive.tar.xz"
 	local archive="fabricmanager-linux-x86_64-570.148.08-archive.tar.xz"
