@@ -324,7 +324,7 @@ prepare_gpu_env() {
 	EOF
 	chmod +x "$dest/usr/local/bin/nvidia-container-cli"
 
-	cat > "$dest"/etc/modules-load.d/nvidia-deps <<-EOF
+	cat > "$dest/etc/modules-load.d/nvidia-deps" <<-EOF
 		firmware_class
 		ecdh_generic
 		ecc
