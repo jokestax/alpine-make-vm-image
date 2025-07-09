@@ -312,9 +312,10 @@ prepare_gpu_env() {
 	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib/
 	mkdir "$dest"/lib64
 	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib64/
-	mkdir "$dest"/usr/lib64
-	cp -r /workdir/rootfs/usr/local/glibc/lib64/* "$dest"/usr/lib64/
-    cp -r /workdir/rootfs/usr/local/lib/libnvidia* "$dest"/usr/local/lib/
+	for file in "$dest"/usr/local/glibc/usr/lib/*; do
+	    ln -sf "$file" "$dest"/lib64/
+	done
+    cp -r /workdir/rootfs/usr/local/lib/lib* "$dest"/usr/local/lib/
 	cat > "$dest"/etc/modules <<-EOF
 		firmware_class
 		ecdh_generic
