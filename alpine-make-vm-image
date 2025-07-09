@@ -320,7 +320,7 @@ prepare_gpu_env() {
 		#!/bin/sh
 	
 		export LD_LIBRARY_PATH=/usr/local/special/
-		exec /usr/local/bin/nvidia-container-cli-original "\$@"
+		exec /usr/local/bin/nvidia-container-cli-original "$@"
 	EOF
 	chmod +x "$dest/usr/local/bin/nvidia-container-cli"
 	cat > "$dest"/etc/modules <<-EOF
