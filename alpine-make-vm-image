@@ -323,7 +323,7 @@ prepare_gpu_env() {
 		exec /usr/local/bin/nvidia-container-cli-original "$@"
 	EOF
 	chmod +x "$dest/usr/local/bin/nvidia-container-cli"
-    mkdir "$dest"/etc/modules-load.d
+
 	cat > "$dest"/etc/modules-load.d/nvidia-deps <<-EOF
 		firmware_class
 		ecdh_generic
