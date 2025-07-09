@@ -312,20 +312,17 @@ prepare_gpu_env() {
 	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib/
 	mkdir "$dest"/lib64
 	cp /workdir/rootfs/usr/local/glibc/usr/lib/ld-linux-x86-64.so.2 "$dest"/lib64/
-	for file in "$dest"/usr/local/glibc/usr/lib/*; do
-	    ln -sf "$file" "$dest"/lib64/
-	done
+
 	mkdir "$dest"/usr/local/special
     cp -r /workdir/rootfs/usr/local/lib/lib* "$dest"/usr/local/special
+	mv "$dest"/usr/local/bin/nvidia-container-cli "$dest"/usr/local/bin/nvidia-container-cli-original
 	cat <<- 'EOF' > "$dest/usr/local/bin/nvidia-container-cli"
 		#!/bin/sh
 	
 		export LD_LIBRARY_PATH=/usr/local/special/
 		exec /usr/local/bin/nvidia-container-cli-original "\$@"
 	EOF
-	
 	chmod +x "$dest/usr/local/bin/nvidia-container-cli"
-	mv "$dest"/usr/local/bin/nvidia-container-cli "$dest"/usr/local/bin/nvidia-container-cli-original
 	cat > "$dest"/etc/modules <<-EOF
 		firmware_class
 		ecdh_generic
