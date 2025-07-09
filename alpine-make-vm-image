@@ -317,7 +317,7 @@ prepare_gpu_env() {
 	done
 	mkdir "$dest"/usr/local/special
     cp -r /workdir/rootfs/usr/local/lib/lib* "$dest"/usr/local/special
-	cat << 'EOF' > /usr/local/bin/nvidia-container-cli
+	cat << 'EOF' > "$dest/usr/local/bin/nvidia-container-cli"
 	#!/bin/sh
 	
 	export LD_LIBRARY_PATH=/usr/local/special/
