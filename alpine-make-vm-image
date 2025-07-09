@@ -323,22 +323,23 @@ prepare_gpu_env() {
 		exec /usr/local/bin/nvidia-container-cli-original "$@"
 	EOF
 	chmod +x "$dest/usr/local/bin/nvidia-container-cli"
-	cat > "$dest"/etc/modules <<-EOF
+    mkdir "$dest"/etc/modules-load.d
+	cat > "$dest"/etc/modules-load.d/nvidia-deps <<-EOF
 		firmware_class
 		ecdh_generic
 		ecc
 		nvidia
-		nvidia_modeset
-		nvidia_uvm
-		nvidia_drm
+		nvidia-modeset
+		nvidia-uvm
+		nvidia-drm
 	EOF
 
 	mkdir -p "$dest/etc/modprobe.d"
 	cat > "$dest/etc/modprobe.d/nvidia-softdep.conf" <<-EOF
 		softdep nvidia pre: firmware_class ecdh_generic ecc
-		softdep nvidia_modeset pre: firmware_class ecdh_generic ecc
-		softdep nvidia_uvm pre: firmware_class ecdh_generic ecc
-		softdep nvidia_drm pre: firmware_class ecdh_generic ecc
+		softdep nvidia-modeset pre: firmware_class ecdh_generic ecc
+		softdep nvidia-uvm pre: firmware_class ecdh_generic ecc
+		softdep nvidia-drm pre: firmware_class ecdh_generic ecc
 	EOF
 
 	# Download and extract Fabric Manager
