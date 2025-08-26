@@ -649,9 +649,9 @@ einfo "Mounting image at $mount_dir"
 
 mount "$root_dev" "$mount_dir"
 
+# Don't mount ESP yet if UEFI - we'll mount it after kernel installation
 if [ "$BOOT_MODE" = 'UEFI' ]; then
-	install -d -m 000 "$mount_dir"/boot
-	mount -t vfat "$esp_dev" "$mount_dir"/boot
+	install -d -m 755 "$mount_dir"/boot
 fi
 
 #-----------------------------------------------------------------------
@@ -705,6 +705,10 @@ einfo "Installing and configuring mkinitfs"
 _apk add --root . mkinitfs
 setup_mkinitfs . "base $ROOTFS $INITFS_FEATURES"
 
+# Generate initramfs
+einfo "Generating initramfs"
+chroot . mkinitfs
+
 #-----------------------------------------------------------------------
 if [ "$BOOT_MODE" = 'BIOS' ]; then
 	einfo 'Setting up extlinux bootloader'
@@ -721,6 +725,10 @@ fi
 #-----------------------------------------------------------------------
 if [ "$BOOT_MODE" = 'UEFI' ]; then
 	einfo 'Setting up UEFI bootloader'
+	
+	# Now mount the ESP
+	einfo 'Mounting ESP partition'
+	mount -t vfat "$esp_dev" boot
 
 	# Install GRUB EFI packages
 	_apk add --root . grub-efi efibootmgr
@@ -755,6 +763,16 @@ if [ "$BOOT_MODE" = 'UEFI' ]; then
 				--root-directory=.
 		}
 
+	# Copy kernel and initramfs from root filesystem to ESP
+	einfo 'Copying kernel and initramfs to ESP partition'
+	# Create a bind mount to access the root filesystem's /boot that's hidden by ESP mount
+	mkdir -p mnt-boot-temp
+	mount --bind . mnt-boot-temp
+	cp mnt-boot-temp/boot/vmlinuz-$KERNEL_FLAVOR boot/
+	cp mnt-boot-temp/boot/initramfs-$KERNEL_FLAVOR boot/
+	umount mnt-boot-temp
+	rmdir mnt-boot-temp
+	
 	# Create GRUB configuration
 	cat > boot/grub/grub.cfg <<-GRUBEOF
 		set default=0
@@ -765,7 +783,7 @@ if [ "$BOOT_MODE" = 'UEFI' ]; then
 		insmod efi_uga
 
 		menuentry "Alpine Linux $KERNEL_FLAVOR" {
-			set root=(hd0,gpt2)
+			set root=(hd0,gpt1)
 			linux /vmlinuz-$KERNEL_FLAVOR root=UUID=$root_uuid rootfstype=$ROOTFS modules=$(echo $INITFS_FEATURES | tr ' ' ',') console=tty0 ${SERIAL_PORT:+console=$SERIAL_PORT}
 			initrd /initramfs-$KERNEL_FLAVOR
 		}
