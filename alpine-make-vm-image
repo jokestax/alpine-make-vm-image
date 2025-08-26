@@ -637,7 +637,22 @@ fi
 # syslinux 6.0.3 cannot boot from ext4 w/ 64bit feature enabled.
 # -E nodiscard / -K - do not attempt to discard blocks at mkfs time (it's
 # useless for NBD image and prints confusing error).
-[ "$ROOTFS" = ext4 ] && mkfs_args='-O ^64bit -E nodiscard' || mkfs_args='-K'
+# For Alpine 3.17 compatibility, we need to disable newer ext4 features
+if [ "$ROOTFS" = ext4 ]; then
+	# Check if we're using an older Alpine branch
+	case "$ALPINE_BRANCH" in
+		v3.1[0-7]*)
+			# Disable newer ext4 features for compatibility with older e2fsck
+			mkfs_args='-O ^64bit,^metadata_csum,^orphan_file -E nodiscard'
+			;;
+		*)
+			# For newer Alpine versions, just disable 64bit
+			mkfs_args='-O ^64bit -E nodiscard'
+			;;
+	esac
+else
+	mkfs_args='-K'
+fi
 
 mkfs.$ROOTFS -L root $mkfs_args "$root_dev"
 
