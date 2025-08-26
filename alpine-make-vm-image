@@ -705,9 +705,7 @@ einfo "Installing and configuring mkinitfs"
 _apk add --root . mkinitfs
 setup_mkinitfs . "base $ROOTFS $INITFS_FEATURES"
 
-# Generate initramfs
-einfo "Generating initramfs"
-chroot . mkinitfs
+# The kernel package installation already triggers mkinitfs, so we don't need to run it again
 
 #-----------------------------------------------------------------------
 if [ "$BOOT_MODE" = 'BIOS' ]; then
