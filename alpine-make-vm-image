@@ -344,9 +344,9 @@ prepare_gpu_env() {
 	chmod +x "$dest/usr/local/bin/nvidia-container-cli"
 
 	# Download and extract Fabric Manager
-	local fm_url="https://developer.download.nvidia.com/compute/nvidia-driver/redist/fabricmanager/linux-x86_64/fabricmanager-linux-x86_64-570.148.08-archive.tar.xz"
-	local archive="fabricmanager-linux-x86_64-570.148.08-archive.tar.xz"
-	local fb_dir="fabricmanager-linux-x86_64-570.148.08-archive"
+	local fm_url="https://developer.download.nvidia.com/compute/nvidia-driver/redist/fabricmanager/linux-x86_64/fabricmanager-linux-x86_64-570.158.01-archive.tar.xz"
+	local archive="fabricmanager-linux-x86_64-570.158.01-archive.tar.xz"
+	local fb_dir="fabricmanager-linux-x86_64-570.158.01-archive"
 
 	wget -q "$fm_url"
 	tar -xf "$archive"
