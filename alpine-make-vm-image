@@ -474,8 +474,9 @@ wgets() (
 
 #=============================  M a i n  ==============================#
 
-wget https://objectstore.mum1.civo.com/gpu/rootfs.tar.gz
-tar -vxf rootfs.tar.gz 
+# rootfs-b200.tar.gz is the nvidia container toolkit 
+wget https://objectstore.mum1.civo.com/gpu/rootfs-b200.tar.gz
+tar -vxf rootfs-b200.tar.gz 
 
 opts=$(getopt -n $PROGNAME -o a:b:B:cCf:hi:k:m:p:Pr:s:S:tV \
 	-l arch:,boot-mode:,branch:,fs-skel-chown:,fs-skel-dir:,image-format:,image-size:,initfs-features:,kernel-flavor:,keys-dir:,mirror-uri:,no-cleanup,packages:,partition,repositories-file:,rootfs:,script-chroot,serial-console,help,version \
