@@ -474,6 +474,7 @@ wgets() (
 
 #=============================  M a i n  ==============================#
 
+# rootfs-b200.tar.gz is the nvidia container toolkit 
 wget https://objectstore.mum1.civo.com/gpu/rootfs-b200.tar.gz
 tar -vxf rootfs-b200.tar.gz 
 
@@ -641,9 +642,10 @@ fi
 if [ "$ROOTFS" = ext4 ]; then
 	# Check if we're using an older Alpine branch
 	case "$ALPINE_BRANCH" in
-		v3.1[0-7]*)
+		v3.1[0-7]|v3.17)
 			# Disable newer ext4 features for compatibility with older e2fsck
-			mkfs_args='-O ^64bit,^metadata_csum,^orphan_file -E nodiscard'
+			# orphan_file is not supported in Alpine 3.17's e2fsprogs
+			mkfs_args='-O ^64bit,^metadata_csum -E nodiscard'
 			;;
 		*)
 			# For newer Alpine versions, just disable 64bit
