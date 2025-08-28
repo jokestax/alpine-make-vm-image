@@ -372,6 +372,12 @@ prepare_gpu_env() {
 
 	mv "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg.tmp" \
 	   "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg"
+
+	wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvlsm_2025.03.1.1-1_amd64.deb
+	dpkg-deb -x nvlsm_2025.03.1.1-1_amd64.deb nvlsm/
+	cp -r nvlsm/opt/* /opt/
+    mkdir -p /usr/share/nvidia/nvlsm
+    cp -r nvlsm/usr/share/nvidia/nvlsm/* /usr/share/nvidia/nvlsm/
 }
 
 # Adds specified services to the runlevel. Current working directory must be
