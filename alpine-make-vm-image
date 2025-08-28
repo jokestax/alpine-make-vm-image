@@ -375,9 +375,17 @@ prepare_gpu_env() {
 
 	wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvlsm_2025.03.1.1-1_amd64.deb
 	dpkg-deb -x nvlsm_2025.03.1.1-1_amd64.deb nvlsm/
-	cp -r nvlsm/opt/* /opt/
-    mkdir -p /usr/share/nvidia/nvlsm
-    cp -r nvlsm/usr/share/nvidia/nvlsm/* /usr/share/nvidia/nvlsm/
+	cp -r nvlsm/opt/* "$dest"/opt/
+    mkdir -p "$dest"/usr/share/nvidia/nvlsm
+    cp -r nvlsm/usr/share/nvidia/nvlsm/* "$dest"/usr/share/nvidia/nvlsm/
+	mv "$dest"/opt/nvidia/nvlsm/sbin/nvlsm "$dest"/opt/nvidia/nvlsm/sbin/nvlsm-real
+	cat <<- 'EOF' > "$dest/opt/nvidia/nvlsm/sbin/nvlsm"
+		#!/bin/sh
+	
+		export LD_LIBRARY_PATH=/lib64:/lib
+		exec /opt/nvidia/nvlsm/sbin/nvlsm-real "$@"
+	EOF
+	chmod +x "$dest/opt/nvidia/nvlsm/sbin/nvlsm"
 }
 
 # Adds specified services to the runlevel. Current working directory must be
