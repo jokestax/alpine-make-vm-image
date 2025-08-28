@@ -374,6 +374,7 @@ prepare_gpu_env() {
 	mv "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg.tmp" \
 	   "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg"
 
+	apk add dpkg
 	wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvlsm_2025.03.1.1-1_amd64.deb
 	dpkg-deb -x nvlsm_2025.03.1.1-1_amd64.deb nvlsm/
 	cp -r nvlsm/opt/* "$dest"/opt/
