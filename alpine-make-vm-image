@@ -357,21 +357,21 @@ prepare_gpu_env() {
 	install -D "$fb_dir/bin/nv-fabricmanager" "$dest/usr/local/bin/nv-fabricmanager"
 	install -D "$fb_dir/bin/nvswitch-audit" "$dest/usr/local/bin/nvswitch-audit"
 
-	mkdir -p "$dest/usr/local/share/nvidia/nvswitch/"
-	cp "$fb_dir/share/nvidia/nvswitch/"* "$dest/usr/local/share/nvidia/nvswitch/"
-	cp "$fb_dir/etc/fabricmanager.cfg" "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg"
+	mkdir -p "$dest/usr/share/nvidia/nvswitch/"
+	cp "$fb_dir/share/nvidia/nvswitch/"* "$dest/usr/share/nvidia/nvswitch/"
+	cp "$fb_dir/etc/fabricmanager.cfg" "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg"
 
 	{
-		echo "FABRIC_NODE_CONFIG_FILE=/usr/local/share/nvidia/nvswitch/fabricmanager.cfg"
+		echo "FABRIC_NODE_CONFIG_FILE=/usr/share/nvidia/nvswitch/fabricmanager.cfg"
 		sed 's|DAEMONIZE=.*|DAEMONIZE=0|' \
 		| sed 's|STATE_FILE_NAME=.*|STATE_FILE_NAME=/var/run/nvidia-fabricmanager/fabricmanager.state|' \
-		| sed 's|TOPOLOGY_FILE_PATH=.*|TOPOLOGY_FILE_PATH=/usr/local/share/nvidia/nvswitch|' \
-		| sed 's|DATABASE_PATH=.*|DATABASE_PATH=/usr/local/share/nvidia/nvswitch|'
-	} < "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg" \
-	  > "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg.tmp"
+		| sed 's|TOPOLOGY_FILE_PATH=.*|TOPOLOGY_FILE_PATH=/usr/share/nvidia/nvswitch|' \
+		| sed 's|DATABASE_PATH=.*|DATABASE_PATH=/usr/share/nvidia/nvswitch|'
+	} < "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg" \
+	  > "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg.tmp"
 
-	mv "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg.tmp" \
-	   "$dest/usr/local/share/nvidia/nvswitch/fabricmanager.cfg"
+	mv "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg.tmp" \
+	   "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg"
 }
 
 # Adds specified services to the runlevel. Current working directory must be
