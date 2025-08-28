@@ -360,6 +360,7 @@ prepare_gpu_env() {
 	mkdir -p "$dest/usr/share/nvidia/nvswitch/"
 	cp "$fb_dir/share/nvidia/nvswitch/"* "$dest/usr/share/nvidia/nvswitch/"
 	cp "$fb_dir/etc/fabricmanager.cfg" "$dest/usr/share/nvidia/nvswitch/fabricmanager.cfg"
+	cp "$fb_dir/bin/nvidia-fabricmanager-start.sh" "$dest/usr/bin/"
 
 	{
 		echo "FABRIC_NODE_CONFIG_FILE=/usr/share/nvidia/nvswitch/fabricmanager.cfg"
