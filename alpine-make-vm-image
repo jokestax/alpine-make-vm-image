@@ -384,7 +384,7 @@ prepare_gpu_env() {
 	cat <<- 'EOF' > "$dest/opt/nvidia/nvlsm/sbin/nvlsm"
 		#!/bin/sh
 	
-		export LD_LIBRARY_PATH=/lib64:/lib
+		export LD_LIBRARY_PATH=/lib64:/lib:/usr/lib
 		exec /opt/nvidia/nvlsm/sbin/nvlsm-real "$@"
 	EOF
 	chmod +x "$dest/opt/nvidia/nvlsm/sbin/nvlsm"
