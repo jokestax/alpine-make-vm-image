@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# K3S Ubuntu Image Builder - Container-friendly version
-# Uses loop devices instead of NBD
+# K3S Ubuntu Image Builder - NBD version (like Alpine workflow)
+# Requires: privileged container + host /dev mount
 
 # Configuration
 UBUNTU_VERSION="${UBUNTU_RELEASE:-jammy}"
@@ -13,9 +13,9 @@ K3S_VERSION="${K3S_VERSION:-1.32.5}"
 K3S_URL="https://github.com/k3s-io/k3s/releases/download/v${K3S_VERSION}+k3s1/k3s"
 
 MOUNT_DIR="/tmp/image-mount"
-LOOP_DEV=""
+NBD_DEV=""
 
-echo "=== K3S Ubuntu Image Builder (container-friendly) ==="
+echo "=== K3S Ubuntu Image Builder (NBD version) ==="
 echo "K3S Version: ${K3S_VERSION}"
 echo "Ubuntu Release: ${UBUNTU_VERSION}"
 echo "Output: ${OUTPUT_IMAGE}"
@@ -28,8 +28,8 @@ cleanup() {
         umount -R "$MOUNT_DIR" 2>/dev/null || true
         rmdir "$MOUNT_DIR" 2>/dev/null || true
     fi
-    if [ -n "$LOOP_DEV" ]; then
-        losetup -d "$LOOP_DEV" 2>/dev/null || true
+    if [ -n "$NBD_DEV" ] && [ -b "$NBD_DEV" ]; then
+        qemu-nbd --disconnect "$NBD_DEV" 2>/dev/null || true
     fi
 }
 
@@ -41,52 +41,104 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Function to get available NBD device
+get_available_nbd() {
+    local dev
+    for dev in $(find /dev -maxdepth 2 -name 'nbd[0-9]*' 2>/dev/null); do
+        if [ "$(blockdev --getsize64 "$dev" 2>/dev/null || echo 1)" -eq 0 ]; then
+            echo "$dev"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Reload partitions on existing NBD devices (like Alpine workflow does)
+echo "Reloading partitions on existing NBD devices..."
+for dev in $(find /dev -maxdepth 2 -name 'nbd[0-9]*' 2>/dev/null); do
+    partprobe "$dev" 2>/dev/null || true
+done
+
+# Load NBD module if not already loaded
+echo "Ensuring NBD module is loaded..."
+if ! lsmod | grep -q nbd; then
+    modprobe nbd max_part=16 || {
+        echo "WARNING: Could not load NBD module. Trying to continue..."
+    }
+fi
+
+# Find available NBD device
+echo "Finding available NBD device..."
+NBD_DEV=$(get_available_nbd) || {
+    echo "ERROR: No available NBD device found"
+    echo "Available devices:"
+    ls -la /dev/nbd* 2>/dev/null || echo "No NBD devices found"
+    exit 1
+}
+
+echo "Using NBD device: $NBD_DEV"
+
 # Download base image
 echo "Downloading Ubuntu cloud image..."
 if [ ! -f "ubuntu-base.img" ]; then
     wget -q -O ubuntu-base.img "$IMAGE_URL"
 fi
 
-# Create working copy and resize
+# Create working copy
 echo "Creating working image..."
-cp ubuntu-base.img "$OUTPUT_IMAGE"
+qemu-img convert -O raw ubuntu-base.img "$OUTPUT_IMAGE"
 
 # Resize the image file
 echo "Resizing image to ${IMAGE_SIZE}..."
 qemu-img resize "$OUTPUT_IMAGE" "$IMAGE_SIZE"
 
-# Use loop device instead of NBD
-echo "Setting up loop device..."
-LOOP_DEV=$(losetup -f)
-losetup -P "$LOOP_DEV" "$OUTPUT_IMAGE"
+# Connect to NBD device
+echo "Connecting image to NBD device..."
+qemu-nbd --connect="$NBD_DEV" --cache=writeback --format=raw "$OUTPUT_IMAGE"
 
-# Wait for partition device to appear
+# Wait for device to be ready
 sleep 2
 
+# Refresh partition table
+echo "Refreshing partition table..."
+partprobe "$NBD_DEV" || true
+sleep 1
+
 # Determine partition device
-if [ -e "${LOOP_DEV}p1" ]; then
-    ROOT_DEV="${LOOP_DEV}p1"
-elif [ -e "${LOOP_DEV}1" ]; then
-    ROOT_DEV="${LOOP_DEV}1"
+if [ -b "${NBD_DEV}p1" ]; then
+    ROOT_DEV="${NBD_DEV}p1"
+elif [ -b "${NBD_DEV}1" ]; then
+    ROOT_DEV="${NBD_DEV}1"
 else
-    echo "ERROR: Cannot find partition on loop device"
-    losetup -d "$LOOP_DEV"
+    echo "ERROR: Cannot find partition on NBD device"
+    echo "Available partitions:"
+    ls -la "${NBD_DEV}"* 2>/dev/null || true
+    qemu-nbd --disconnect "$NBD_DEV"
     exit 1
 fi
 
-echo "Using device: $ROOT_DEV"
+echo "Using root device: $ROOT_DEV"
+
+# Wait for partition device to be ready
+sleep 2
 
 # Resize partition and filesystem
 echo "Resizing partition..."
-growpart "$LOOP_DEV" 1 || true
-e2fsck -f "$ROOT_DEV" -y || true
-resize2fs "$ROOT_DEV"
+growpart "$NBD_DEV" 1 || echo "growpart completed with code $?"
+
+echo "Checking filesystem..."
+e2fsck -f "$ROOT_DEV" -y || echo "fsck completed with code $?"
+
+echo "Resizing filesystem..."
+resize2fs "$ROOT_DEV" || echo "resize2fs completed with code $?"
 
 # Mount the image
+echo "Mounting root filesystem..."
 mkdir -p "$MOUNT_DIR"
 mount "$ROOT_DEV" "$MOUNT_DIR"
 
 # Mount necessary filesystems for chroot
+echo "Setting up chroot environment..."
 mount --bind /dev "$MOUNT_DIR/dev"
 mount --bind /proc "$MOUNT_DIR/proc"
 mount --bind /sys "$MOUNT_DIR/sys"
@@ -205,6 +257,18 @@ chroot "$MOUNT_DIR" /tmp/provision.sh
 
 # Clean up provisioning script
 rm "$MOUNT_DIR/tmp/provision.sh"
+
+# Sync and unmount
+echo "Syncing filesystems..."
+sync
+
+echo "Unmounting filesystems..."
+umount -R "$MOUNT_DIR" || true
+rmdir "$MOUNT_DIR" || true
+
+# Disconnect NBD
+echo "Disconnecting NBD device..."
+qemu-nbd --disconnect "$NBD_DEV"
 
 echo ""
 echo "=== Build Complete ==="
