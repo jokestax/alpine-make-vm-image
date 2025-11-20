@@ -1,8 +1,14 @@
 #!/bin/bash
 set -e
 
-# K3S Ubuntu Image Builder - NBD version (like Alpine workflow)
+# K3S Ubuntu Image Builder - NBD version (Fixed)
 # Requires: privileged container + host /dev mount
+
+# Install required tools if missing
+if ! command -v growpart &> /dev/null; then
+    echo "Installing cloud-guest-utils for growpart..."
+    apt-get update -qq && apt-get install -y -qq cloud-guest-utils
+fi
 
 # Configuration
 UBUNTU_VERSION="${UBUNTU_RELEASE:-jammy}"
@@ -53,7 +59,7 @@ get_available_nbd() {
     return 1
 }
 
-# Reload partitions on existing NBD devices (like Alpine workflow does)
+# Reload partitions on existing NBD devices
 echo "Reloading partitions on existing NBD devices..."
 for dev in $(find /dev -maxdepth 2 -name 'nbd[0-9]*' 2>/dev/null); do
     partprobe "$dev" 2>/dev/null || true
@@ -81,7 +87,7 @@ echo "Using NBD device: $NBD_DEV"
 # Download base image
 echo "Downloading Ubuntu cloud image..."
 if [ ! -f "ubuntu-base.img" ]; then
-    wget -q -O ubuntu-base.img "$IMAGE_URL"
+    wget -q --show-progress -O ubuntu-base.img "$IMAGE_URL"
 fi
 
 # Create working copy
@@ -145,6 +151,10 @@ mount --bind /sys "$MOUNT_DIR/sys"
 mount --bind /dev/pts "$MOUNT_DIR/dev/pts"
 
 # Copy resolv.conf for network access
+# Handle dangling symlink
+if [ -L "$MOUNT_DIR/etc/resolv.conf" ]; then
+    rm "$MOUNT_DIR/etc/resolv.conf"
+fi
 cp /etc/resolv.conf "$MOUNT_DIR/etc/resolv.conf"
 
 echo "Customizing system..."
