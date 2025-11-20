@@ -1,31 +1,35 @@
 #!/bin/bash
 set -e
 
-# K3S Ubuntu Image Builder using chroot
-# More control, no virt-customize needed
+# K3S Ubuntu Image Builder - Container-friendly version
+# Uses loop devices instead of NBD
 
 # Configuration
-UBUNTU_VERSION="jammy"
+UBUNTU_VERSION="${UBUNTU_RELEASE:-jammy}"
 IMAGE_URL="https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
-OUTPUT_IMAGE="k3s-ubuntu.img"
-IMAGE_SIZE="10G"
-K3S_VERSION="1.32.5"
-K3S_URL=https://github.com/k3s-io/k3s/releases/download/v${K3S_VERSION}+k3s1/k3s
+OUTPUT_IMAGE="${OUTPUT_IMAGE:-ubuntu.raw}"
+IMAGE_SIZE="${DISK_SIZE:-4G}"
+K3S_VERSION="${K3S_VERSION:-1.32.5}"
+K3S_URL="https://github.com/k3s-io/k3s/releases/download/v${K3S_VERSION}+k3s1/k3s"
 
 MOUNT_DIR="/tmp/image-mount"
-NBD_DEV=""
+LOOP_DEV=""
 
-echo "=== K3S Ubuntu Image Builder (chroot method) ==="
+echo "=== K3S Ubuntu Image Builder (container-friendly) ==="
+echo "K3S Version: ${K3S_VERSION}"
+echo "Ubuntu Release: ${UBUNTU_VERSION}"
+echo "Output: ${OUTPUT_IMAGE}"
 
 # Cleanup function
 cleanup() {
     echo "Cleaning up..."
+    set +e
     if [ -d "$MOUNT_DIR" ]; then
         umount -R "$MOUNT_DIR" 2>/dev/null || true
         rmdir "$MOUNT_DIR" 2>/dev/null || true
     fi
-    if [ -n "$NBD_DEV" ]; then
-        qemu-nbd --disconnect "$NBD_DEV" 2>/dev/null || true
+    if [ -n "$LOOP_DEV" ]; then
+        losetup -d "$LOOP_DEV" 2>/dev/null || true
     fi
 }
 
@@ -33,56 +37,54 @@ trap cleanup EXIT
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then 
-    echo "Please run as root (sudo)"
+    echo "Please run as root"
     exit 1
 fi
-
-# Check prerequisites
-command -v qemu-img >/dev/null || { echo "Install qemu-img: apt-get install qemu-utils"; exit 1; }
-command -v qemu-nbd >/dev/null || { echo "Install qemu-nbd: apt-get install qemu-utils"; exit 1; }
-
-# Load NBD module
-modprobe nbd max_part=16
 
 # Download base image
 echo "Downloading Ubuntu cloud image..."
 if [ ! -f "ubuntu-base.img" ]; then
-    wget -O ubuntu-base.img "$IMAGE_URL"
+    wget -q -O ubuntu-base.img "$IMAGE_URL"
 fi
 
 # Create working copy and resize
 echo "Creating working image..."
 cp ubuntu-base.img "$OUTPUT_IMAGE"
+
+# Resize the image file
+echo "Resizing image to ${IMAGE_SIZE}..."
 qemu-img resize "$OUTPUT_IMAGE" "$IMAGE_SIZE"
 
-# Find available NBD device
-for i in {0..15}; do
-    if [ ! -e "/sys/class/block/nbd$i/pid" ]; then
-        NBD_DEV="/dev/nbd$i"
-        break
-    fi
-done
+# Use loop device instead of NBD
+echo "Setting up loop device..."
+LOOP_DEV=$(losetup -f)
+losetup -P "$LOOP_DEV" "$OUTPUT_IMAGE"
 
-if [ -z "$NBD_DEV" ]; then
-    echo "No available NBD device found"
+# Wait for partition device to appear
+sleep 2
+
+# Determine partition device
+if [ -e "${LOOP_DEV}p1" ]; then
+    ROOT_DEV="${LOOP_DEV}p1"
+elif [ -e "${LOOP_DEV}1" ]; then
+    ROOT_DEV="${LOOP_DEV}1"
+else
+    echo "ERROR: Cannot find partition on loop device"
+    losetup -d "$LOOP_DEV"
     exit 1
 fi
 
-echo "Using NBD device: $NBD_DEV"
+echo "Using device: $ROOT_DEV"
 
-# Connect image as NBD device
-qemu-nbd --connect="$NBD_DEV" "$OUTPUT_IMAGE"
-sleep 2
-
-# Resize partition to fill disk
+# Resize partition and filesystem
 echo "Resizing partition..."
-growpart "$NBD_DEV" 1 || true
-e2fsck -f "${NBD_DEV}p1" || true
-resize2fs "${NBD_DEV}p1"
+growpart "$LOOP_DEV" 1 || true
+e2fsck -f "$ROOT_DEV" -y || true
+resize2fs "$ROOT_DEV"
 
 # Mount the image
 mkdir -p "$MOUNT_DIR"
-mount "${NBD_DEV}p1" "$MOUNT_DIR"
+mount "$ROOT_DEV" "$MOUNT_DIR"
 
 # Mount necessary filesystems for chroot
 mount --bind /dev "$MOUNT_DIR/dev"
@@ -208,8 +210,5 @@ echo ""
 echo "=== Build Complete ==="
 echo "Output image: $OUTPUT_IMAGE"
 echo ""
-echo "To test:"
-echo "  sudo qemu-system-x86_64 -enable-kvm -m 4G -smp 4 -drive file=$OUTPUT_IMAGE -nographic"
-echo ""
-echo "To convert to qcow2:"
-echo "  qemu-img convert -O qcow2 $OUTPUT_IMAGE ${OUTPUT_IMAGE%.img}.qcow2"
+echo "Image details:"
+ls -lh "$OUTPUT_IMAGE"
