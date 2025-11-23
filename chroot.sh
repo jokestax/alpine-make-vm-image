@@ -198,7 +198,8 @@ fi
 echo "Root filesystem UUID: $ROOT_UUID"
 
 echo "=== Configuring kernel parameters ==="
-sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory"/' /etc/default/grub
+# Include the UUID in the GRUB command line
+sed -i "s|GRUB_CMDLINE_LINUX=\"\"|GRUB_CMDLINE_LINUX=\"root=UUID=${ROOT_UUID} systemd.unified_cgroup_hierarchy=1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory\"|" /etc/default/grub
 update-grub
 
 echo "=== Installing CNI plugins ==="
