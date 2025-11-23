@@ -325,6 +325,23 @@ echo "=== Enabling services ==="
 systemctl enable ssh
 systemctl enable chrony
 
+echo "=== Configuring boot for generic block devices ==="
+# Ensure fstab uses UUID
+ROOT_UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /))
+if [ -n "$ROOT_UUID" ]; then
+    cat > /etc/fstab <<EOF
+# <file system> <mount point> <type> <options> <dump> <pass>
+UUID=${ROOT_UUID} / ext4 defaults 0 1
+EOF
+fi
+
+# Rebuild initramfs to detect devices properly
+update-initramfs -u -k all
+
+# Remove any hardcoded root device from grub
+sed -i 's/root=\/dev\/nbd[0-9]*p[0-9]*//' /etc/default/grub
+update-grub
+
 echo "=== Cleaning up ==="
 apt-get autoremove -y
 apt-get clean
