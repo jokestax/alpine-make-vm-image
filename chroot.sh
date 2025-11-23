@@ -188,6 +188,15 @@ apt-get install -y \
     python3 python3-docutils openssh-server chrony \
     e2fsprogs xfsprogs util-linux isc-dhcp-client
 
+# Get UUID FIRST, before any update-grub
+ROOT_UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /))
+if [ -z "$ROOT_UUID" ]; then
+    echo "ERROR: Could not determine root filesystem UUID"
+    exit 1
+fi
+
+echo "Root filesystem UUID: $ROOT_UUID"
+
 echo "=== Configuring kernel parameters ==="
 sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory"/' /etc/default/grub
 update-grub
@@ -337,10 +346,6 @@ fi
 
 # Rebuild initramfs to detect devices properly
 update-initramfs -u -k all
-
-# Remove any hardcoded root device from grub
-sed -i 's/root=\/dev\/nbd[0-9]*p[0-9]*//' /etc/default/grub
-update-grub
 
 echo "=== Cleaning up ==="
 apt-get autoremove -y
