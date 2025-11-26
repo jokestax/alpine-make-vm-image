@@ -375,6 +375,24 @@ chroot "$MOUNT_DIR" /tmp/provision.sh
 # Clean up provisioning script
 rm -f "$MOUNT_DIR/tmp/provision.sh"
 
+# ============================================
+# CONFIGURE DNS - Simple approach
+# ============================================
+echo "=== Configuring final DNS settings ==="
+
+# Remove symlink if exists
+if [ -L "$MOUNT_DIR/etc/resolv.conf" ]; then
+    rm "$MOUNT_DIR/etc/resolv.conf"
+fi
+
+# Write final DNS configuration
+cat > "$MOUNT_DIR/etc/resolv.conf" <<EOF
+# Default nameservers
+search cluster.local
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+EOF
+
 # Sync and unmount
 echo "Syncing filesystems..."
 sync
