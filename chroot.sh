@@ -186,7 +186,8 @@ apt-get install -y \
     s3cmd sqlite3 software-properties-common \
     build-essential cmake linux-headers-generic libnl-3-dev \
     python3 python3-docutils openssh-server chrony \
-    e2fsprogs xfsprogs util-linux isc-dhcp-client
+    e2fsprogs xfsprogs util-linux isc-dhcp-client \
+    xterm
 
 # Get UUID FIRST, before any update-grub
 ROOT_UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /))
@@ -334,6 +335,32 @@ EOF
 echo "=== Enabling services ==="
 systemctl enable ssh
 systemctl enable chrony
+
+echo "=== Configuring terminal for console access ==="
+# Enable serial console
+systemctl enable serial-getty@ttyS0.service
+
+# Add terminal fixes to bashrc
+cat >> /etc/bash.bashrc <<EOF
+
+# Terminal fixes for VM console (KVM/libvirt)
+if [ -t 0 ]; then
+    export TERM=linux
+    # Reset terminal to sane state
+    stty sane 2>/dev/null || true
+    # Set proper terminal size if resize is available
+    command -v resize >/dev/null 2>&1 && eval \$(resize) 2>/dev/null || true
+fi
+EOF
+
+# Add to root's bashrc as well
+cat >> /root/.bashrc <<EOF
+
+# Terminal fixes for VM console
+export TERM=linux
+stty sane 2>/dev/null || true
+command -v resize >/dev/null 2>&1 && eval \$(resize) 2>/dev/null || true
+EOF
 
 echo "=== Configuring boot for generic block devices ==="
 # Ensure fstab uses UUID
