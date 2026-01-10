@@ -210,11 +210,11 @@ tar -xzf /tmp/cni.tgz -C /opt/cni/bin
 rm /tmp/cni.tgz
 
 echo "=== Installing K3S ==="
-curl -L K3S_URL_PLACEHOLDER -o /usr/local/bin/k3s
-chmod +x /usr/local/bin/k3s
-ln -sf /usr/local/bin/k3s /usr/local/bin/kubectl
-ln -sf /usr/local/bin/k3s /usr/local/bin/crictl
-ln -sf /usr/local/bin/k3s /usr/local/bin/ctr
+curl -L K3S_URL_PLACEHOLDER -o /usr/bin/k3s
+chmod +x /usr/bin/k3s
+ln -sf /usr/bin/k3s /usr/bin/kubectl
+ln -sf /usr/bin/k3s /usr/bin/crictl
+ln -sf /usr/bin/k3s /usr/bin/ctr
 
 echo "=== Creating K3S systemd service ==="
 cat > /etc/systemd/system/k3s.service <<'EOF'
@@ -242,7 +242,7 @@ ExecStartPre=/bin/sh -c 'mount --make-rshared /'
 ExecStartPre=/bin/sh -xc '! /usr/bin/systemctl is-enabled --quiet nm-cloud-setup.service'
 ExecStartPre=-/sbin/modprobe br_netfilter
 ExecStartPre=-/sbin/modprobe overlay
-ExecStart=/usr/local/bin/k3s server --kubelet-arg='kube-reserved=cpu=180m,memory=500Mi,ephemeral-storage=2Gi' --kubelet-arg='eviction-hard=memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%,pid.available<10%'
+ExecStart=/usr/bin/k3s server --kubelet-arg='kube-reserved=cpu=180m,memory=500Mi,ephemeral-storage=2Gi' --kubelet-arg='eviction-hard=memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%,pid.available<10%'
 StandardOutput=append:/var/log/k3s.log
 StandardError=append:/var/log/k3s.log
 
@@ -269,7 +269,7 @@ start_pre() {
 
 supervisor=supervise-daemon
 name=k3s
-command="/usr/local/bin/k3s"
+command="/usr/bin/k3s"
 command_args="server --kubelet-arg='kube-reserved=cpu=180m,memory=500Mi,ephemeral-storage=2Gi' \
 --kubelet-arg='eviction-hard=memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%,pid.available<10%' \
 >>/var/log/k3s.log 2>&1"
