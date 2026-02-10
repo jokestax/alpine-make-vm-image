@@ -311,6 +311,83 @@ tar -xzf /tmp/npd.tgz -C /opt/node-problem-detector/
 rm /tmp/npd.tgz
 rm -rf /opt/node-problem-detector/test
 
+echo "=== Configuring S3 Backup Infrastructure ==="
+# Create S3 configuration for Wasabi
+cat > /root/.s3cfg <<EOF
+[default]
+host_base = s3.wasabisys.com
+host_bucket = %(bucket)s.s3.wasabisys.com
+use_https = True
+EOF
+
+# Create backup script
+cat > /etc/backup.sh <<'BACKUP_EOF'
+#!/bin/bash
+set -e
+
+# Load environment variables
+if [ -f /etc/backup.env ]; then
+    source /etc/backup.env
+else
+    echo "Error: /etc/backup.env not found"
+    exit 1
+fi
+
+# Configuration
+K3S_DB_PATH="/var/lib/rancher/k3s/server/db/state.db"
+K3S_TOKEN_PATH="/var/lib/rancher/k3s/server/token"
+BACKUP_DIR="/tmp/k3s-backup"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_NAME="k3s-backup-${TIMESTAMP}"
+S3_BUCKET="civo-tenant-k3s-backups"
+
+# Validate required environment variables
+for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY REGION TENANT_ID; do
+    if [ -z "${!var}" ]; then
+        echo "Error: $var is not set"
+        exit 1
+    fi
+done
+
+# Create backup directory
+mkdir -p "${BACKUP_DIR}"
+
+# Dump K3S SQLite database
+if [ -f "${K3S_DB_PATH}" ]; then
+    echo "Dumping K3S database..."
+    sqlite3 "${K3S_DB_PATH}" ".backup '${BACKUP_DIR}/state.db'"
+else
+    echo "Warning: K3S database not found at ${K3S_DB_PATH}"
+fi
+
+# Copy node token
+if [ -f "${K3S_TOKEN_PATH}" ]; then
+    echo "Copying node token..."
+    cp "${K3S_TOKEN_PATH}" "${BACKUP_DIR}/token"
+else
+    echo "Warning: K3S token not found at ${K3S_TOKEN_PATH}"
+fi
+
+# Create compressed archive
+echo "Creating backup archive..."
+cd /tmp
+tar -czvf "${BACKUP_NAME}.tar.gz" -C "${BACKUP_DIR}" .
+
+# Upload to S3
+echo "Uploading to S3..."
+s3cmd put "${BACKUP_NAME}.tar.gz" \
+    "s3://${S3_BUCKET}/${REGION}/${TENANT_ID}/${BACKUP_NAME}.tar.gz" \
+    --access_key="${AWS_ACCESS_KEY_ID}" \
+    --secret_key="${AWS_SECRET_ACCESS_KEY}"
+
+# Cleanup
+rm -rf "${BACKUP_DIR}" "/tmp/${BACKUP_NAME}.tar.gz"
+
+echo "Backup completed successfully: ${BACKUP_NAME}"
+BACKUP_EOF
+
+chmod +x /etc/backup.sh
+
 echo "=== Installing NVIDIA Container Toolkit ==="
 # Install prerequisites
 apt-get install -y --no-install-recommends curl gnupg2
