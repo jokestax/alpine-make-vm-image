@@ -311,6 +311,28 @@ tar -xzf /tmp/npd.tgz -C /opt/node-problem-detector/
 rm /tmp/npd.tgz
 rm -rf /opt/node-problem-detector/test
 
+echo "=== Installing NVIDIA Container Toolkit ==="
+# Install prerequisites
+apt-get install -y --no-install-recommends curl gnupg2
+
+# Configure the production repository
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+# Update and install NVIDIA Container Toolkit
+apt-get update
+NVIDIA_CONTAINER_TOOLKIT_VERSION=1.18.2-1
+apt-get install -y \
+    nvidia-container-toolkit=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+    nvidia-container-toolkit-base=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+    libnvidia-container-tools=${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+    libnvidia-container1=${NVIDIA_CONTAINER_TOOLKIT_VERSION}
+
+# Configure containerd for Kubernetes (K3s uses containerd)
+nvidia-ctk runtime configure --runtime=containerd
+
 echo "=== Configuring system ==="
 mkdir -p /etc/systemd/system.conf.d
 cat > /etc/systemd/system.conf.d/cgroup.conf <<EOF
