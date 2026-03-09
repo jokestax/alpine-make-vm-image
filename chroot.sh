@@ -412,7 +412,62 @@ nvidia-ctk runtime configure --runtime=containerd
 
 sed -i 's|#root = "/run/nvidia/driver"|root = "/run/nvidia/driver"|' \
     /etc/nvidia-container-runtime/config.toml
-    
+
+echo "=== Installing NVIDIA Driver 570.158.01 ==="
+NVIDIA_DRIVER_VERSION="570.158.01"
+
+# Blacklist nouveau
+cat > /etc/modprobe.d/blacklist-nouveau.conf << EOF
+blacklist nouveau
+options nouveau modeset=0
+EOF
+update-initramfs -u
+
+# Download and install driver
+wget -q --show-progress \
+    "https://us.download.nvidia.com/tesla/${NVIDIA_DRIVER_VERSION}/NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}.run" \
+    -O /tmp/nvidia-driver.run
+sh /tmp/nvidia-driver.run --silent --dkms --install-libglvnd
+rm /tmp/nvidia-driver.run
+
+# Verify
+nvidia-smi || { echo "ERROR: NVIDIA driver installation failed"; exit 1; }
+
+echo "=== Installing nvlsm ==="
+NVLSM_VERSION="2025.03.1.1-1"
+
+# Add CUDA repo (needed for libibumad3 and fabricmanager)
+wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb \
+    -O /tmp/cuda-keyring.deb
+dpkg -i /tmp/cuda-keyring.deb
+rm /tmp/cuda-keyring.deb
+apt-get update
+
+# Install dependencies
+add-apt-repository -y universe
+apt-get update
+apt-get install -y libibumad3 rdma-core
+
+# Install nvlsm
+wget -q "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvlsm_${NVLSM_VERSION}_amd64.deb" \
+    -O /tmp/nvlsm.deb
+dpkg -i /tmp/nvlsm.deb
+apt-get install -f -y
+rm /tmp/nvlsm.deb
+
+ls /opt/nvidia/nvlsm/sbin/nvlsm || { echo "ERROR: nvlsm installation failed"; exit 1; }
+
+echo "=== Installing NVIDIA Fabric Manager ==="
+FABRIC_MANAGER_VERSION="570.158.01"
+
+wget -q "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvidia-fabricmanager-570_${FABRIC_MANAGER_VERSION}-1_amd64.deb" \
+    -O /tmp/fabricmanager.deb
+dpkg -i /tmp/fabricmanager.deb
+apt-get install -f -y
+rm /tmp/fabricmanager.deb
+
+systemctl enable nvidia-fabricmanager
+
 echo "=== Configuring system ==="
 mkdir -p /etc/systemd/system.conf.d
 cat > /etc/systemd/system.conf.d/cgroup.conf <<EOF
