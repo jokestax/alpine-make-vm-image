@@ -410,6 +410,9 @@ apt-get install -y \
 # Configure containerd for Kubernetes (K3s uses containerd)
 nvidia-ctk runtime configure --runtime=containerd
 
+sed -i 's|#root = "/run/nvidia/driver"|root = "/run/nvidia/driver"|' \
+    /etc/nvidia-container-runtime/config.toml
+    
 echo "=== Configuring system ==="
 mkdir -p /etc/systemd/system.conf.d
 cat > /etc/systemd/system.conf.d/cgroup.conf <<EOF
