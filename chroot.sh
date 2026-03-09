@@ -417,8 +417,19 @@ echo "=== Installing NVIDIA Driver 570.158.01 ==="
 NVIDIA_DRIVER_VERSION="570.158.01"
 
 # Driver .run file is pre-extracted outside the chroot and mounted at /tmp/nvidia-driver
-# Run the installer from the pre-extracted directory
-/tmp/nvidia-driver/nvidia-installer --silent --dkms --install-libglvnd --no-questions
+# Detect the installed kernel version (not the running container kernel)
+INSTALLED_KERNEL=$(ls /lib/modules/ | grep -E '^5\.15\.0-' | sort -V | tail -1)
+if [ -z "$INSTALLED_KERNEL" ]; then
+    echo "ERROR: Could not detect installed kernel in /lib/modules/"
+    ls /lib/modules/
+    exit 1
+fi
+echo "Building NVIDIA driver for kernel: $INSTALLED_KERNEL"
+
+# Run the installer targeting the installed kernel, not the running one
+/tmp/nvidia-driver/nvidia-installer --silent --dkms --install-libglvnd --no-questions \
+    --kernel-name="$INSTALLED_KERNEL" \
+    --kernel-source-path="/usr/src/linux-headers-${INSTALLED_KERNEL}"
 rm -rf /tmp/nvidia-driver
 
 echo "=== Installing nvlsm ==="
