@@ -185,9 +185,11 @@ apt-get install -y \
     nfs-common open-iscsi conntrack dbus iptables logrotate vim \
     s3cmd sqlite3 software-properties-common \
     build-essential cmake linux-headers-generic libnl-3-dev \
-    python3 python3-docutils openssh-server chrony \
+    python3 python3-docutils openssh-server chrony linux-modules-extra-generic infiniband-diags\
     e2fsprogs xfsprogs util-linux isc-dhcp-client \
     xterm
+
+echo 'mlx5_ib' >> /etc/modules
 
 # Get UUID FIRST, before any update-grub
 ROOT_UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /))
@@ -409,9 +411,6 @@ apt-get install -y \
 
 # Configure containerd for Kubernetes (K3s uses containerd)
 nvidia-ctk runtime configure --runtime=containerd
-
-sed -i 's|#root = "/run/nvidia/driver"|root = "/run/nvidia/driver"|' \
-    /etc/nvidia-container-runtime/config.toml
 
 echo "=== Installing NVIDIA Driver 570.158.01 ==="
 NVIDIA_DRIVER_VERSION="570.158.01"
