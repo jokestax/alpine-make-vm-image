@@ -185,12 +185,16 @@ apt-get install -y \
     curl wget htop sudo \
     nfs-common open-iscsi conntrack dbus iptables logrotate vim \
     s3cmd sqlite3 software-properties-common \
-    build-essential cmake linux-headers-generic libnl-3-dev \
+    build-essential cmake linux-headers-5.15.0-170-generic linux-image-5.15.0-170-generic libnl-3-dev \
     python3 python3-docutils openssh-server chrony linux-modules-extra-5.15.0-170-generic infiniband-diags\
     e2fsprogs xfsprogs util-linux isc-dhcp-client \
     xterm
 
 echo 'mlx5_ib' >> /etc/modules
+
+# Remove old kernels that came with the base image, keep only 5.15.0-170
+echo "=== Removing old kernel versions ==="
+dpkg --list | grep -E 'linux-(image|headers|modules).*5\.15\.0-' | grep -v '5\.15\.0-170' | awk '{print $2}' | xargs -r apt-get purge -y || true
 
 # Get UUID FIRST, before any update-grub
 ROOT_UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /))
