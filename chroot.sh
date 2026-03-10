@@ -177,6 +177,11 @@ export DEBIAN_FRONTEND=noninteractive
 
 echo "=== Updating system ==="
 apt-get update
+
+# Enable universe repo before installing packages
+add-apt-repository -y universe
+apt-get update
+
 apt-get upgrade -y
 
 echo "=== Installing packages ==="
