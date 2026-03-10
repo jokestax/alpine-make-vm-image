@@ -176,12 +176,14 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 
 echo "=== Updating system ==="
-apt-get update
+sed -i 's/^deb \(.*\) jammy \(.*\)$/deb \1 jammy \2 universe/' /etc/apt/sources.list
+# Also add explicit universe line if not already present
+grep -q "^deb.*universe" /etc/apt/sources.list || \
+    echo "deb http://archive.ubuntu.com/ubuntu jammy main restricted universe multiverse" >> /etc/apt/sources.list
+grep -q "^deb.*jammy-updates.*universe" /etc/apt/sources.list || \
+    echo "deb http://archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list
 
-# Enable universe repo before installing packages
-add-apt-repository -y universe
 apt-get update
-
 apt-get upgrade -y
 
 echo "=== Installing packages ==="
