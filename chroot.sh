@@ -431,9 +431,7 @@ echo "=== Installing NVIDIA Driver 570.158.01 ==="
 NVIDIA_DRIVER_VERSION="570.158.01"
 
 echo "Building NVIDIA driver for kernel: $ACTIVE_KERNEL"
-/tmp/nvidia-driver/nvidia-installer --silent --dkms --install-libglvnd --no-questions \
-    --kernel-name="$ACTIVE_KERNEL" \
-    --kernel-source-path="/usr/src/linux-headers-${ACTIVE_KERNEL}"
+/tmp/nvidia-driver/nvidia-installer --silent --dkms --install-libglvnd
 rm -rf /tmp/nvidia-driver
 
 echo "=== Installing nvlsm ==="
@@ -559,7 +557,7 @@ chmod +x "$MOUNT_DIR/tmp/provision.sh"
 echo "Downloading and extracting NVIDIA driver outside chroot..."
 NVIDIA_DRIVER_VERSION="570.158.01"
 wget -q --show-progress \
-    "https://us.download.nvidia.com/XFree86/Linux-x86_64/${NVIDIA_DRIVER_VERSION}/NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}.run" \
+    "https://us.download.nvidia.com/tesla/${NVIDIA_DRIVER_VERSION}/NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}.run" \
     -O /tmp/nvidia-driver.run
 chmod +x /tmp/nvidia-driver.run
 /tmp/nvidia-driver.run --extract-only --target "$MOUNT_DIR/tmp/nvidia-driver"
