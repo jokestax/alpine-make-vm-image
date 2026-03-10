@@ -180,21 +180,24 @@ echo "=== Updating system ==="
 apt-get update
 apt-get upgrade -y
 
+ACTIVE_KERNEL=$(ls /lib/modules/ | sort -V | tail -1)
+echo "=== Active kernel detected: $ACTIVE_KERNEL ==="
+if [ -z "$ACTIVE_KERNEL" ]; then
+    echo "ERROR: Could not detect kernel in /lib/modules/"
+    exit 1
+fi
+
 echo "=== Installing packages ==="
 apt-get install -y \
     curl wget htop sudo \
     nfs-common open-iscsi conntrack dbus iptables logrotate vim \
     s3cmd sqlite3 software-properties-common \
-    build-essential cmake linux-headers-5.15.0-171-generic linux-image-5.15.0-171-generic libnl-3-dev \
-    python3 python3-docutils openssh-server chrony linux-modules-extra-5.15.0-171-generic infiniband-diags\
+    build-essential cmake linux-headers-${ACTIVE_KERNEL} libnl-3-dev \
+    python3 python3-docutils openssh-server chrony linux-modules-extra-${ACTIVE_KERNEL} infiniband-diags\
     e2fsprogs xfsprogs util-linux isc-dhcp-client \
     xterm
 
 echo 'mlx5_ib' >> /etc/modules
-
-# Remove old kernels that came with the base image, keep only 5.15.0-171
-echo "=== Removing old kernel versions ==="
-dpkg --list | grep -E 'linux-(image|headers|modules).*5\.15\.0-' | grep -v '5\.15\.0-171' | awk '{print $2}' | xargs -r apt-get purge -y || true
 
 # Get UUID FIRST, before any update-grub
 ROOT_UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /))
@@ -420,20 +423,10 @@ nvidia-ctk runtime configure --runtime=containerd
 echo "=== Installing NVIDIA Driver 570.158.01 ==="
 NVIDIA_DRIVER_VERSION="570.158.01"
 
-# Driver .run file is pre-extracted outside the chroot and mounted at /tmp/nvidia-driver
-# Detect the installed kernel version (not the running container kernel)
-INSTALLED_KERNEL=$(ls /lib/modules/ | grep -E '^5\.15\.0-' | sort -V | tail -1)
-if [ -z "$INSTALLED_KERNEL" ]; then
-    echo "ERROR: Could not detect installed kernel in /lib/modules/"
-    ls /lib/modules/
-    exit 1
-fi
-echo "Building NVIDIA driver for kernel: $INSTALLED_KERNEL"
-
-# Run the installer targeting the installed kernel, not the running one
+echo "Building NVIDIA driver for kernel: $ACTIVE_KERNEL"
 /tmp/nvidia-driver/nvidia-installer --silent --dkms --install-libglvnd --no-questions \
-    --kernel-name="$INSTALLED_KERNEL" \
-    --kernel-source-path="/usr/src/linux-headers-${INSTALLED_KERNEL}"
+    --kernel-name="$ACTIVE_KERNEL" \
+    --kernel-source-path="/usr/src/linux-headers-${ACTIVE_KERNEL}"
 rm -rf /tmp/nvidia-driver
 
 echo "=== Installing nvlsm ==="
