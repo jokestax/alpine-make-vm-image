@@ -176,12 +176,6 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 
 echo "=== Updating system ==="
-sed -i 's/^deb \(.*\) jammy \(.*\)$/deb \1 jammy \2 universe/' /etc/apt/sources.list
-# Also add explicit universe line if not already present
-grep -q "^deb.*universe" /etc/apt/sources.list || \
-    echo "deb http://archive.ubuntu.com/ubuntu jammy main restricted universe multiverse" >> /etc/apt/sources.list
-grep -q "^deb.*jammy-updates.*universe" /etc/apt/sources.list || \
-    echo "deb http://archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list
 
 apt-get update
 apt-get upgrade -y
@@ -192,7 +186,7 @@ apt-get install -y \
     nfs-common open-iscsi conntrack dbus iptables logrotate vim \
     s3cmd sqlite3 software-properties-common \
     build-essential cmake linux-headers-generic libnl-3-dev \
-    python3 python3-docutils openssh-server chrony linux-modules-extra-generic infiniband-diags\
+    python3 python3-docutils openssh-server chrony linux-modules-extra-5.15.0-170-generic infiniband-diags\
     e2fsprogs xfsprogs util-linux isc-dhcp-client \
     xterm
 
