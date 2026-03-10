@@ -179,6 +179,13 @@ echo "=== Updating system ==="
 apt-get update
 apt-get upgrade -y
 
+ACTIVE_KERNEL=$(ls /lib/modules/ | sort -V | tail -1)
+echo "=== Active kernel detected: $ACTIVE_KERNEL ==="
+if [ -z "$ACTIVE_KERNEL" ]; then
+    echo "ERROR: Could not detect kernel in /lib/modules/"
+    exit 1
+fi
+
 echo "=== Installing packages ==="
 apt-get install -y \
     curl wget htop sudo \
@@ -427,7 +434,11 @@ update-initramfs -u
 wget -q --show-progress \
     "https://us.download.nvidia.com/tesla/${NVIDIA_DRIVER_VERSION}/NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}.run" \
     -O /tmp/nvidia-driver.run
-sh /tmp/nvidia-driver.run --silent --dkms --install-libglvnd
+sh /tmp/nvidia-driver.run --silent --dkms --install-libglvnd \
+    --kernel-name=${ACTIVE_KERNEL} \
+    --kernel-source-path=/usr/src/linux-headers-${ACTIVE_KERNEL} \
+    --no-cc-version-check
+rm /tmp/nvidia-driver.run
 rm /tmp/nvidia-driver.run
 
 # Verify
