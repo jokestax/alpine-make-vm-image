@@ -427,14 +427,14 @@ apt-get install -y \
 # Configure containerd for Kubernetes (K3s uses containerd)
 nvidia-ctk runtime configure --runtime=containerd
 
-echo "=== Installing NVIDIA Driver 570.158.01 ==="
-NVIDIA_DRIVER_VERSION="570.158.01"
+# echo "=== Installing NVIDIA Driver 570.158.01 ==="
+# NVIDIA_DRIVER_VERSION="570.158.01"
 
-echo "Building NVIDIA driver for kernel: $ACTIVE_KERNEL"
-/tmp/nvidia-driver/nvidia-installer --silent --dkms --install-libglvnd --no-questions \
-    --kernel-name="$ACTIVE_KERNEL" \
-    --kernel-source-path="/usr/src/linux-headers-${ACTIVE_KERNEL}"
-rm -rf /tmp/nvidia-driver
+# echo "Building NVIDIA driver for kernel: $ACTIVE_KERNEL"
+# /tmp/nvidia-driver/nvidia-installer --silent --dkms --install-libglvnd --no-questions \
+#     --kernel-name="$ACTIVE_KERNEL" \
+#     --kernel-source-path="/usr/src/linux-headers-${ACTIVE_KERNEL}"
+# rm -rf /tmp/nvidia-driver
 
 echo "=== Installing nvlsm ==="
 NVLSM_VERSION="2025.03.1.1-1"
@@ -555,15 +555,15 @@ sed -i "s|K3S_URL_PLACEHOLDER|$K3S_URL|g" "$MOUNT_DIR/tmp/provision.sh"
 # Make script executable
 chmod +x "$MOUNT_DIR/tmp/provision.sh"
 
-# Pre-extract NVIDIA driver outside chroot (extraction fails inside chroot)
-echo "Downloading and extracting NVIDIA driver outside chroot..."
-NVIDIA_DRIVER_VERSION="570.158.01"
-wget -q --show-progress \
-    "https://us.download.nvidia.com/tesla/${NVIDIA_DRIVER_VERSION}/NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}.run" \
-    -O /tmp/nvidia-driver.run
-chmod +x /tmp/nvidia-driver.run
-/tmp/nvidia-driver.run --extract-only --target "$MOUNT_DIR/tmp/nvidia-driver"
-rm /tmp/nvidia-driver.run
+# # Pre-extract NVIDIA driver outside chroot (extraction fails inside chroot)
+# echo "Downloading and extracting NVIDIA driver outside chroot..."
+# NVIDIA_DRIVER_VERSION="570.158.01"
+# wget -q --show-progress \
+#     "https://us.download.nvidia.com/tesla/${NVIDIA_DRIVER_VERSION}/NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}.run" \
+#     -O /tmp/nvidia-driver.run
+# chmod +x /tmp/nvidia-driver.run
+# /tmp/nvidia-driver.run --extract-only --target "$MOUNT_DIR/tmp/nvidia-driver"
+# rm /tmp/nvidia-driver.run
 
 # Run provisioning script in chroot
 echo "Running provisioning in chroot..."
