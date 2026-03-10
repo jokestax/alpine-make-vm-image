@@ -199,6 +199,13 @@ apt-get install -y \
 
 echo 'mlx5_ib' >> /etc/modules
 
+echo "=== Blacklisting nouveau ==="
+cat > /etc/modprobe.d/blacklist-nouveau.conf << EOF
+blacklist nouveau
+options nouveau modeset=0
+install nouveau /bin/false
+EOF
+
 # Get UUID FIRST, before any update-grub
 ROOT_UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /))
 if [ -z "$ROOT_UUID" ]; then
