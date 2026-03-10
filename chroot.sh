@@ -432,6 +432,7 @@ NVIDIA_DRIVER_VERSION="570.158.01"
 
 echo "Building NVIDIA driver for kernel: $ACTIVE_KERNEL"
 /tmp/nvidia-driver/nvidia-installer --silent --dkms --install-libglvnd --no-questions \
+    --kernel-module-type=open \
     --kernel-name="$ACTIVE_KERNEL" \
     --kernel-source-path="/usr/src/linux-headers-${ACTIVE_KERNEL}"
 rm -rf /tmp/nvidia-driver
