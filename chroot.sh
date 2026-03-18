@@ -479,6 +479,21 @@ rm /tmp/fabricmanager.deb
 
 systemctl enable nvidia-fabricmanager
 
+# ↓ ADD THIS
+echo "=== Pinning NVIDIA packages to prevent auto-upgrade ==="
+apt-mark hold \
+    nvidia-fabricmanager-570 \
+    nvidia-driver-570 \
+    nvidia-utils-570
+
+# Also blacklist nvidia from unattended-upgrades
+cat >> /etc/apt/apt.conf.d/50unattended-upgrades <<EOF
+Unattended-Upgrade::Package-Blacklist {
+    "nvidia-*";
+    "libnvidia-*";
+};
+EOF
+
 echo "=== Configuring system ==="
 mkdir -p /etc/systemd/system.conf.d
 cat > /etc/systemd/system.conf.d/cgroup.conf <<EOF
