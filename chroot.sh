@@ -486,11 +486,11 @@ apt-mark hold \
     nvidia-driver-570 \
     nvidia-utils-570
 
-# Disable and stop the service
-systemctl disable --now unattended-upgrades
+echo "=== Disabling auto-upgrades ==="
+# chroot-safe: mask the service via symlink instead of systemctl
+ln -sf /dev/null /etc/systemd/system/unattended-upgrades.service
 
-# Set all periodic values to 0
-cat > /etc/apt/apt.conf.d/20auto-upgrades << 'EOF'
+cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
 APT::Periodic::Update-Package-Lists "0";
 APT::Periodic::Download-Upgradeable-Packages "0";
 APT::Periodic::AutocleanInterval "0";
