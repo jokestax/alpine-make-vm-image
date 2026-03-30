@@ -486,6 +486,17 @@ apt-mark hold \
     nvidia-driver-570 \
     nvidia-utils-570
 
+# Disable and stop the service
+systemctl disable --now unattended-upgrades
+
+# Set all periodic values to 0
+cat > /etc/apt/apt.conf.d/20auto-upgrades << 'EOF'
+APT::Periodic::Update-Package-Lists "0";
+APT::Periodic::Download-Upgradeable-Packages "0";
+APT::Periodic::AutocleanInterval "0";
+APT::Periodic::Unattended-Upgrade "0";
+EOF
+
 # Also blacklist nvidia from unattended-upgrades
 cat >> /etc/apt/apt.conf.d/50unattended-upgrades <<EOF
 Unattended-Upgrade::Package-Blacklist {
