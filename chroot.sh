@@ -420,90 +420,90 @@ apt-get install -y \
 # Configure containerd for Kubernetes (K3s uses containerd)
 nvidia-ctk runtime configure --runtime=containerd
 
-echo "=== Installing NVIDIA Driver 570.158.01 ==="
-NVIDIA_DRIVER_VERSION="570.158.01"
+# echo "=== Installing NVIDIA Driver 570.158.01 ==="
+# NVIDIA_DRIVER_VERSION="570.158.01"
 
-# Blacklist nouveau
-cat > /etc/modprobe.d/blacklist-nouveau.conf << EOF
-blacklist nouveau
-options nouveau modeset=0
-EOF
-update-initramfs -u
+# # Blacklist nouveau
+# cat > /etc/modprobe.d/blacklist-nouveau.conf << EOF
+# blacklist nouveau
+# options nouveau modeset=0
+# EOF
+# update-initramfs -u
 
-# Download and install driver
-wget -q --show-progress \
-    "https://us.download.nvidia.com/tesla/${NVIDIA_DRIVER_VERSION}/NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}.run" \
-    -O /tmp/nvidia-driver.run
-sh /tmp/nvidia-driver.run --silent --dkms --install-libglvnd \
-    --kernel-name=${ACTIVE_KERNEL} \
-    --kernel-source-path=/usr/src/linux-headers-${ACTIVE_KERNEL} \
-    --no-cc-version-check
-rm /tmp/nvidia-driver.run
+# # Download and install driver
+# wget -q --show-progress \
+#     "https://us.download.nvidia.com/tesla/${NVIDIA_DRIVER_VERSION}/NVIDIA-Linux-x86_64-${NVIDIA_DRIVER_VERSION}.run" \
+#     -O /tmp/nvidia-driver.run
+# sh /tmp/nvidia-driver.run --silent --dkms --install-libglvnd \
+#     --kernel-name=${ACTIVE_KERNEL} \
+#     --kernel-source-path=/usr/src/linux-headers-${ACTIVE_KERNEL} \
+#     --no-cc-version-check
+# rm /tmp/nvidia-driver.run
 
-# nvidia-smi won't work in chroot without GPU - verify driver files instead
-ls /usr/bin/nvidia-smi /usr/lib/x86_64-linux-gnu/libnvidia* 2>/dev/null || { echo "ERROR: NVIDIA driver installation failed - no driver files found"; exit 1; }
-echo "NVIDIA driver files installed successfully"
+# # nvidia-smi won't work in chroot without GPU - verify driver files instead
+# ls /usr/bin/nvidia-smi /usr/lib/x86_64-linux-gnu/libnvidia* 2>/dev/null || { echo "ERROR: NVIDIA driver installation failed - no driver files found"; exit 1; }
+# echo "NVIDIA driver files installed successfully"
 
-echo "=== Installing nvlsm ==="
-NVLSM_VERSION="2025.03.1.1-1"
+# echo "=== Installing nvlsm ==="
+# NVLSM_VERSION="2025.03.1.1-1"
 
-# Add CUDA repo (needed for libibumad3 and fabricmanager)
-wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb \
-    -O /tmp/cuda-keyring.deb
-dpkg -i /tmp/cuda-keyring.deb
-rm /tmp/cuda-keyring.deb
-apt-get update
+# # Add CUDA repo (needed for libibumad3 and fabricmanager)
+# wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb \
+#     -O /tmp/cuda-keyring.deb
+# dpkg -i /tmp/cuda-keyring.deb
+# rm /tmp/cuda-keyring.deb
+# apt-get update
 
-# Install dependencies
-add-apt-repository -y universe
-apt-get update
-apt-get install -y libibumad3 rdma-core
+# # Install dependencies
+# add-apt-repository -y universe
+# apt-get update
+# apt-get install -y libibumad3 rdma-core
 
-# Install nvlsm
-wget -q "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvlsm_${NVLSM_VERSION}_amd64.deb" \
-    -O /tmp/nvlsm.deb
-dpkg -i /tmp/nvlsm.deb
-apt-get install -f -y
-rm /tmp/nvlsm.deb
+# # Install nvlsm
+# wget -q "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvlsm_${NVLSM_VERSION}_amd64.deb" \
+#     -O /tmp/nvlsm.deb
+# dpkg -i /tmp/nvlsm.deb
+# apt-get install -f -y
+# rm /tmp/nvlsm.deb
 
-ls /opt/nvidia/nvlsm/sbin/nvlsm || { echo "ERROR: nvlsm installation failed"; exit 1; }
+# ls /opt/nvidia/nvlsm/sbin/nvlsm || { echo "ERROR: nvlsm installation failed"; exit 1; }
 
-echo "=== Installing NVIDIA Fabric Manager ==="
-FABRIC_MANAGER_VERSION="570.158.01"
+# echo "=== Installing NVIDIA Fabric Manager ==="
+# FABRIC_MANAGER_VERSION="570.158.01"
 
-wget -q "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvidia-fabricmanager-570_${FABRIC_MANAGER_VERSION}-1_amd64.deb" \
-    -O /tmp/fabricmanager.deb
-dpkg -i /tmp/fabricmanager.deb
-apt-get install -f -y
-rm /tmp/fabricmanager.deb
+# wget -q "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/nvidia-fabricmanager-570_${FABRIC_MANAGER_VERSION}-1_amd64.deb" \
+#     -O /tmp/fabricmanager.deb
+# dpkg -i /tmp/fabricmanager.deb
+# apt-get install -f -y
+# rm /tmp/fabricmanager.deb
 
-systemctl enable nvidia-fabricmanager
+# systemctl enable nvidia-fabricmanager
 
-# ↓ ADD THIS
-echo "=== Pinning NVIDIA packages to prevent auto-upgrade ==="
-apt-mark hold \
-    nvidia-fabricmanager-570 \
-    nvidia-driver-570 \
-    nvidia-utils-570
+# # ↓ ADD THIS
+# echo "=== Pinning NVIDIA packages to prevent auto-upgrade ==="
+# apt-mark hold \
+#     nvidia-fabricmanager-570 \
+#     nvidia-driver-570 \
+#     nvidia-utils-570
 
-echo "=== Disabling auto-upgrades ==="
-# chroot-safe: mask the service via symlink instead of systemctl
-ln -sf /dev/null /etc/systemd/system/unattended-upgrades.service
+# echo "=== Disabling auto-upgrades ==="
+# # chroot-safe: mask the service via symlink instead of systemctl
+# ln -sf /dev/null /etc/systemd/system/unattended-upgrades.service
 
-cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
-APT::Periodic::Update-Package-Lists "0";
-APT::Periodic::Download-Upgradeable-Packages "0";
-APT::Periodic::AutocleanInterval "0";
-APT::Periodic::Unattended-Upgrade "0";
-EOF
+# cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
+# APT::Periodic::Update-Package-Lists "0";
+# APT::Periodic::Download-Upgradeable-Packages "0";
+# APT::Periodic::AutocleanInterval "0";
+# APT::Periodic::Unattended-Upgrade "0";
+# EOF
 
-# Also blacklist nvidia from unattended-upgrades
-cat >> /etc/apt/apt.conf.d/50unattended-upgrades <<EOF
-Unattended-Upgrade::Package-Blacklist {
-    "nvidia-*";
-    "libnvidia-*";
-};
-EOF
+# # Also blacklist nvidia from unattended-upgrades
+# cat >> /etc/apt/apt.conf.d/50unattended-upgrades <<EOF
+# Unattended-Upgrade::Package-Blacklist {
+#     "nvidia-*";
+#     "libnvidia-*";
+# };
+# EOF
 
 echo "=== Configuring system ==="
 mkdir -p /etc/systemd/system.conf.d
