@@ -197,7 +197,11 @@ apt-get install -y \
     e2fsprogs xfsprogs util-linux isc-dhcp-client \
     xterm
 
-echo 'mlx5_ib' >> /etc/modules
+cat >> /etc/modules <<'EOF'
+mlx5_ib
+mlx5_core
+ib_umad
+EOF
 
 # Get UUID FIRST, before any update-grub
 ROOT_UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /))
