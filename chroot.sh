@@ -203,6 +203,8 @@ mlx5_core
 ib_umad
 EOF
 
+echo "install algif_aead /bin/false" > /etc/modprobe.d/disable-algif.conf
+
 # Get UUID FIRST, before any update-grub
 ROOT_UUID=$(blkid -s UUID -o value $(findmnt -n -o SOURCE /))
 if [ -z "$ROOT_UUID" ]; then
