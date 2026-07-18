@@ -268,45 +268,6 @@ EOF
 
 systemctl daemon-reload
 
-echo "=== Creating K3S OpenRC init script (for Alpine compatibility) ==="
-mkdir -p /etc/init.d
-cat > /etc/init.d/k3s <<'EOF'
-#!/sbin/openrc-run
-
-depend() {
-    need net cgroups dbus
-    want cgroups
-}
-
-start_pre() {
-    rm -f /tmp/k3s.*
-    mount --make-rshared /
-}
-
-supervisor=supervise-daemon
-name=k3s
-command="/usr/bin/k3s"
-command_args="server --kubelet-arg='kube-reserved=cpu=180m,memory=500Mi,ephemeral-storage=2Gi' \
---kubelet-arg='eviction-hard=memory.available<100Mi,nodefs.available<10%,nodefs.inodesFree<5%,pid.available<10%' \
->>/var/log/k3s.log 2>&1"
-
-output_log=/var/log/k3s.log
-error_log=/var/log/k3s.log
-
-pidfile="/var/run/k3s.pid"
-respawn_delay=5
-respawn_max=0
-
-rc_ulimit="${K3S_ULIMIT:--c unlimited -n 1048576 -u unlimited}"
-
-set -o allexport
-if [ -f /etc/environment ]; then source /etc/environment; fi
-if [ -f /etc/rancher/k3s/k3s.env ]; then source /etc/rancher/k3s/k3s.env; fi
-set +o allexport
-EOF
-
-chmod +x /etc/init.d/k3s
-
 echo "=== Installing Litestream ==="
 wget -q https://github.com/benbjohnson/litestream/releases/download/v0.3.8/litestream-v0.3.8-linux-amd64-static.tar.gz -O /tmp/litestream.tgz
 cd /tmp && tar xvf litestream.tgz
