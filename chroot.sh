@@ -178,14 +178,14 @@ export DEBIAN_FRONTEND=noninteractive
 echo "=== Updating system ==="
 
 apt-get update
-apt-get upgrade -y
+apt-get full-upgrade -y
 
-ACTIVE_KERNEL=$(ls /lib/modules/ | sort -V | tail -1)
-echo "=== Active kernel detected: $ACTIVE_KERNEL ==="
-if [ -z "$ACTIVE_KERNEL" ]; then
-    echo "ERROR: Could not detect kernel in /lib/modules/"
+ABI=$(echo "$ACTIVE_KERNEL" | cut -d- -f2)
+if [ "$ABI" -lt 203 ]; then
+    echo "ERROR: kernel $ACTIVE_KERNEL is vulnerable to CVE-2026-98432 (need 5.15.0-203+)"
     exit 1
 fi
+echo "=== Kernel $ACTIVE_KERNEL OK ==="
 
 echo "=== Installing packages ==="
 apt-get install -y \
